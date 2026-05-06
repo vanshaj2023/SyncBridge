@@ -1,0 +1,18 @@
+departments:
+  - name: sws
+    detection: webhook
+    url_env: SWS_URL
+
+  - name: factories
+    detection: webhook
+    url_env: FACTORIES_URL
+
+  - name: shop_establishment
+    detection: polling
+    url_env: SHOP_ESTAB_URL
+    poll_interval_seconds: 10
+
+  - name: kspcb
+    detection: snapshot
+    url_env: KSPCB_URL
+    snapshot_interval_seconds: 30

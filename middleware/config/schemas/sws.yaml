@@ -1,0 +1,7 @@
+department: sws
+field_map:
+  registered_address: registered_address
+  business_name: business_name
+  authorized_signatory: authorized_signatory
+  phone: phone
+transforms: {}

@@ -1,0 +1,7 @@
+department: shop_establishment
+field_map:
+  registered_address: shop_addr
+  business_name: establishment_nm
+  authorized_signatory: proprietor
+  phone: mobile
+transforms: {}

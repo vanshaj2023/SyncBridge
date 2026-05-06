@@ -1,0 +1,11 @@
+department: factories
+field_map:
+  registered_address: factory_address
+  business_name: factory_name
+  authorized_signatory: signatory_name
+  phone: contact_number
+transforms:
+  registered_address:
+    uppercase: true
+  phone:
+    strip_prefix: "+91"

@@ -1,0 +1,7 @@
+department: kspcb
+field_map:
+  registered_address: site_location
+  business_name: unit_name
+  authorized_signatory: env_officer
+  phone: helpline
+transforms: {}
