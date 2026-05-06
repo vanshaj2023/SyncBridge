@@ -1,0 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #f8fafc;
+  --surface:     #ffffff;
+  --surface-2:   #f1f5f9;
+  --border:      #e2e8f0;
+  --border-2:    #cbd5e1;
+  --text-1:      #0f172a;
+  --text-2:      #334155;
+  --text-3:      #64748b;
+  --text-4:      #94a3b8;
+  --accent:      #16a34a;
+  --accent-light:#dcfce7;
+  --accent-dark: #14532d;
+  --blue:        #2563eb;
+  --blue-light:  #dbeafe;
+  --purple:      #7c3aed;
+  --purple-light:#ede9fe;
+  --amber:       #d97706;
+  --amber-light: #fef3c7;
+  --red:         #dc2626;
+  --red-light:   #fee2e2;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow:      0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg:   0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
+  --radius:      12px;
+  --radius-sm:   8px;
+  --radius-xs:   6px;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-4); }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.fade-in   { animation: fadeIn   0.25s ease both; }
+.slide-in  { animation: slide-in 0.2s  ease both; }
+
+/* Utility */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.card-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.card-body { padding: 20px 22px; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 500;
+}
+.badge-green  { background: var(--accent-light);  color: var(--accent-dark); }
+.badge-red    { background: var(--red-light);    color: var(--red); }
+.badge-amber  { background: var(--amber-light);  color: var(--amber); }
+.badge-blue   { background: var(--blue-light);   color: var(--blue); }
+.badge-purple { background: var(--purple-light); color: var(--purple); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px;
+  border-radius: var(--radius-xs); border: none; font-size: 13px; font-weight: 500;
+  transition: all 0.15s ease; white-space: nowrap;
+}
+.btn-primary   { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #15803d; box-shadow: 0 0 0 3px rgba(22,163,74,0.15); }
+.btn-secondary { background: var(--surface); color: var(--text-2); border: 1px solid var(--border); }
+.btn-secondary:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border-2); }
+.btn-ghost { background: transparent; color: var(--text-3); border: 1px solid var(--border); }
+.btn-ghost:hover:not(:disabled) { background: var(--surface-2); color: var(--text-2); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.input {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-xs); font-size: 13px; color: var(--text-1);
+  background: var(--surface); transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}

@@ -1,10 +1,60 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api'
 
-const STATUS_COLOR = { success: '#22c55e', partial_success: '#f59e0b', failed: '#ef4444' }
-const STATUS_LABEL = { success: '✅ Success', partial_success: '⚠️ Partial', failed: '❌ Failed' }
-const DEPT_ICON    = { sws: '🏛️', factories: '🏭', shop_establishment: '🏪', kspcb: '🌿' }
-const METHOD_COLOR = { webhook: '#818cf8', polling: '#34d399', snapshot: '#fb923c' }
+const ICON   = { sws: '🏛️', factories: '🏭', shop_establishment: '🏪', kspcb: '🌿' }
+const METHOD = { webhook: { label: 'Webhook',  badge: 'badge-blue'   },
+                 polling:  { label: 'Polling',  badge: 'badge-green'  },
+                 snapshot: { label: 'Snapshot', badge: 'badge-amber'  } }
+const STATUS = { success:         { label: 'Success',  badge: 'badge-green'  },
+                 partial_success: { label: 'Partial',  badge: 'badge-amber'  },
+                 failed:          { label: 'Failed',   badge: 'badge-red'    } }
+
+function Steps({ e, changes }) {
+  const steps = [
+    { n: 1, title: 'Change detected',   color: '#2563eb',
+      body: `${e.source?.toUpperCase()} sent a change via ${e.detection_method || 'webhook'}`,
+      sub: `UBID: ${e.ubid}` },
+    { n: 2, title: 'Fields extracted',  color: '#7c3aed',
+      body: `${Object.keys(changes).length} field(s) changed`,
+      sub: Object.entries(changes).map(([k,v]) => `${k} = "${v}"`).join(' · ') },
+    { n: 3, title: e.conflict ? '⚡ Conflict detected' : 'No conflict', color: e.conflict ? '#7c3aed' : '#16a34a',
+      body: e.conflict ? `${e.conflict.resolution_policy} applied — ${e.conflict.winner} wins` : 'No competing updates in the conflict window',
+      sub: e.conflict ? e.conflict.reason : 'Proceeding with delivery' },
+    { n: 4, title: 'Schema translated', color: '#d97706',
+      body: 'Field names mapped from source schema to each target schema',
+      sub: 'e.g. registered_address → factory_address (Factories)' },
+    { n: 5, title: 'Delivered',         color: '#16a34a',
+      body: `Pushed to: ${(e.targets_delivered || []).join(', ') || 'none'}`,
+      sub: (e.targets_failed?.length ? `Failed: ${e.targets_failed.join(', ')}` : 'All targets acknowledged') },
+    { n: 6, title: 'Audit saved',       color: '#94a3b8',
+      body: 'Full trace saved to MongoDB audit_log collection',
+      sub: `Event ID: ${e.event_id}` },
+  ]
+
+  return (
+    <div style={{ padding: '16px 20px', background: 'var(--surface-2)', borderTop: '1px solid var(--border)' }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 12 }}>
+        What happened behind the scenes
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {steps.map(s => (
+          <div key={s.n} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <div style={{
+              width: 24, height: 24, borderRadius: '50%', background: s.color,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0, marginTop: 1,
+            }}>{s.n}</div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)' }}>{s.title}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{s.body}</div>
+              {s.sub && <div style={{ fontSize: 11, color: 'var(--text-4)', fontStyle: 'italic', marginTop: 1 }}>{s.sub}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function EventFeed() {
   const [events, setEvents]     = useState([])
@@ -18,173 +68,133 @@ export default function EventFeed() {
   }, [])
 
   return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+    <section className="card">
+      {/* Header */}
+      <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 style={{ color: '#e2e8f0', fontSize: 16, margin: 0, fontWeight: 600 }}>Live Event Feed</h2>
-          <p style={{ color: '#64748b', fontSize: 12, margin: '4px 0 0' }}>
-            Every sync operation — what changed, where it came from, where it was delivered
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-1)' }}>Live Event Feed</h2>
+            {events.length > 0 && (
+              <span className="badge badge-green">{events.length} events</span>
+            )}
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
+            Every sync operation — click any row to see what happened step by step
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: '#475569' }}>
-          <span style={{ color: '#818cf8' }}>● Webhook</span>
-          <span style={{ color: '#34d399' }}>● Polling</span>
-          <span style={{ color: '#fb923c' }}>● Snapshot</span>
-          <span style={{ marginLeft: 8 }}>Auto-refreshes every 2s</span>
+        <div style={{ display: 'flex', gap: 10, fontSize: 11, color: 'var(--text-4)' }}>
+          <span className="badge badge-blue">Webhook</span>
+          <span className="badge badge-green">Polling</span>
+          <span className="badge badge-amber">Snapshot</span>
         </div>
       </div>
 
-      {events.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px 20px', color: '#475569', background: '#1e293b', borderRadius: 8, border: '1px dashed #334155' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
-          <div style={{ fontSize: 15, color: '#64748b', marginBottom: 6 }}>No events yet</div>
-          <div style={{ fontSize: 12 }}>Go to <strong style={{ color: '#38bdf8' }}>Try It Yourself</strong> or <strong style={{ color: '#38bdf8' }}>Demo Scenarios</strong> to trigger a sync</div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 520, overflowY: 'auto' }}>
-          {events.map((e, i) => {
-            const isOpen = expanded === i
-            const changes = (() => { try { return JSON.parse(e.changes || '{}') } catch { return {} } })()
-            return (
-              <div key={i} style={{
-                background: e.conflict ? '#1a1428' : '#1e293b',
-                border: `1px solid ${e.conflict ? '#7c3aed' : '#334155'}`,
-                borderRadius: 8,
-                overflow: 'hidden',
-                cursor: 'pointer',
-              }} onClick={() => setExpanded(isOpen ? null : i)}>
+      {/* Body */}
+      <div style={{ padding: '16px 20px' }}>
+        {events.length === 0 ? (
+          <div style={{
+            textAlign: 'center', padding: '52px 20px',
+            border: '2px dashed var(--border)', borderRadius: 10, color: 'var(--text-4)',
+          }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
+            <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-3)', marginBottom: 6 }}>No events yet</div>
+            <div style={{ fontSize: 12 }}>Head to <strong style={{ color: 'var(--accent)' }}>Try It Yourself</strong> or <strong style={{ color: 'var(--accent)' }}>Demo Scenarios</strong> to trigger a sync</div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 480, overflowY: 'auto' }}>
+            {events.map((e, i) => {
+              const changes = (() => { try { return JSON.parse(e.changes || '{}') } catch { return {} } })()
+              const method  = METHOD[e.detection_method] || { label: e.detection_method, badge: 'badge-blue' }
+              const st      = STATUS[e.final_status]    || { label: e.final_status, badge: 'badge-blue' }
+              const isOpen  = expanded === i
 
-                {/* Conflict stripe */}
-                {e.conflict && (
-                  <div style={{ background: '#7c3aed', padding: '3px 12px', fontSize: 11, color: '#e9d5ff' }}>
-                    ⚡ CONFLICT DETECTED — {e.conflict.resolution_policy} applied — Winner: {e.conflict.winner}
-                  </div>
-                )}
-
-                {/* Main row */}
-                <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-
-                  {/* Detection method badge */}
-                  <span style={{
-                    background: '#0f172a', border: `1px solid ${METHOD_COLOR[e.detection_method] || '#334155'}`,
-                    color: METHOD_COLOR[e.detection_method] || '#94a3b8',
-                    borderRadius: 4, padding: '2px 7px', fontSize: 10, whiteSpace: 'nowrap',
-                  }}>
-                    {e.detection_method || 'webhook'}
-                  </span>
-
-                  {/* Source → targets */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 14 }}>{DEPT_ICON[e.source?.toLowerCase()] || '🔲'}</span>
-                      <span style={{ color: '#fb923c', fontSize: 13, fontWeight: 600 }}>
-                        {e.source?.toUpperCase()}
+              return (
+                <div key={i} className="slide-in" style={{
+                  border: `1px solid ${e.conflict ? '#c4b5fd' : 'var(--border)'}`,
+                  background: e.conflict ? '#faf5ff' : 'var(--surface)',
+                  borderRadius: 10, overflow: 'hidden',
+                  boxShadow: isOpen ? 'var(--shadow)' : 'var(--shadow-sm)',
+                  transition: 'box-shadow 0.2s',
+                  animationDelay: `${i * 0.04}s`,
+                }}>
+                  {/* Conflict banner */}
+                  {e.conflict && (
+                    <div style={{ background: '#7c3aed', padding: '5px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 12 }}>⚡</span>
+                      <span style={{ fontSize: 11, color: '#fff', fontWeight: 500 }}>
+                        Conflict resolved — {e.conflict.resolution_policy} — {e.conflict.winner} wins
                       </span>
-                      <span style={{ color: '#475569' }}>propagated to</span>
-                      {(e.targets_delivered || []).map(t => (
-                        <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#0f172a', borderRadius: 4, padding: '2px 7px', fontSize: 11, color: '#22c55e' }}>
-                          {DEPT_ICON[t] || '🔲'} {t.replace(/_/g, ' ')}
-                        </span>
-                      ))}
-                      {(e.targets_failed || []).map(t => (
-                        <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: '#0f172a', borderRadius: 4, padding: '2px 7px', fontSize: 11, color: '#ef4444' }}>
-                          {DEPT_ICON[t] || '🔲'} {t.replace(/_/g, ' ')} ✗
-                        </span>
-                      ))}
+                    </div>
+                  )}
+
+                  {/* Main row */}
+                  <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
+                    onClick={() => setExpanded(isOpen ? null : i)}>
+
+                    {/* Source icon */}
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 9, background: 'var(--surface-2)',
+                      border: '1px solid var(--border)', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', fontSize: 18, flexShrink: 0,
+                    }}>
+                      {ICON[e.source?.toLowerCase()] || '🔲'}
                     </div>
 
-                    {/* Changed fields summary */}
-                    <div style={{ marginTop: 4, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {Object.entries(changes).map(([field, val]) => (
-                        <span key={field} style={{ fontSize: 10, color: '#64748b', background: '#0f172a', borderRadius: 3, padding: '1px 6px' }}>
-                          {field}: <span style={{ color: '#94a3b8' }}>"{String(val).slice(0, 30)}{String(val).length > 30 ? '…' : ''}"</span>
+                    {/* Main info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>
+                          {e.source?.toUpperCase()}
                         </span>
-                      ))}
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                          <path d="M2 7h10M8 3l4 4-4 4" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        {(e.targets_delivered || []).map(t => (
+                          <span key={t} style={{ fontSize: 11, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                            {ICON[t]} {t.replace(/_/g, ' ')}
+                          </span>
+                        ))}
+                        {(e.targets_failed || []).map(t => (
+                          <span key={t} style={{ fontSize: 11, color: 'var(--red)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                            {ICON[t]} {t.replace(/_/g, ' ')} ✗
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Changed fields */}
+                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                        {Object.entries(changes).map(([field, val]) => (
+                          <span key={field} style={{
+                            fontSize: 10, background: 'var(--surface-2)', border: '1px solid var(--border)',
+                            borderRadius: 4, padding: '1px 7px', color: 'var(--text-3)',
+                          }}>
+                            {field}: <strong style={{ color: 'var(--text-2)' }}>"{String(val).slice(0, 28)}{String(val).length > 28 ? '…' : ''}"</strong>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Right side */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
+                      <span className={`badge ${st.badge}`}>{st.label}</span>
+                      <span className={`badge ${method.badge}`}>{method.label}</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-4)' }}>{e.timestamp?.slice(11, 19)} UTC</span>
+                    </div>
+
+                    {/* Expand chevron */}
+                    <div style={{ color: 'var(--text-4)', fontSize: 12, marginLeft: 4 }}>
+                      {isOpen ? '▲' : '▼'}
                     </div>
                   </div>
 
-                  {/* Right side */}
-                  <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <div style={{ color: STATUS_COLOR[e.final_status] || '#94a3b8', fontSize: 12, fontWeight: 600 }}>
-                      {STATUS_LABEL[e.final_status] || e.final_status}
-                    </div>
-                    <div style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>
-                      {e.timestamp?.slice(11, 19)} UTC
-                    </div>
-                    <div style={{ color: '#334155', fontSize: 10, marginTop: 2 }}>
-                      {isOpen ? '▲ hide' : '▼ details'}
-                    </div>
-                  </div>
+                  {/* Expanded steps */}
+                  {isOpen && <Steps e={e} changes={changes} />}
                 </div>
-
-                {/* Expanded detail — step-by-step what happened */}
-                {isOpen && (
-                  <div style={{ borderTop: '1px solid #334155', padding: '12px 14px', background: '#0f172a' }}>
-                    <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 10, fontWeight: 600 }}>
-                      What happened behind the scenes:
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-
-                      <Step n={1} title="Change detected"
-                        desc={`${e.source?.toUpperCase()} sent a change via ${e.detection_method || 'webhook'}`}
-                        detail={`UBID: ${e.ubid}`} color="#818cf8" />
-
-                      <Step n={2} title="Fields extracted"
-                        desc={`${Object.keys(changes).length} field(s) changed`}
-                        detail={Object.entries(changes).map(([k,v]) => `${k} = "${v}"`).join(', ')}
-                        color="#34d399" />
-
-                      {e.conflict ? (
-                        <Step n={3} title="⚡ Conflict detected!"
-                          desc={`Same field updated by 2 sources within conflict window`}
-                          detail={e.conflict.reason}
-                          color="#c084fc" />
-                      ) : (
-                        <Step n={3} title="No conflict"
-                          desc="No competing updates detected in conflict window"
-                          detail="Proceeding with delivery"
-                          color="#22c55e" />
-                      )}
-
-                      <Step n={4} title="Schema translated"
-                        desc="Field names converted from source schema to each target's schema"
-                        detail={`e.g. "registered_address" → "factory_address" (for Factories)`}
-                        color="#fb923c" />
-
-                      <Step n={5} title="Delivered"
-                        desc={`Pushed to: ${(e.targets_delivered || []).join(', ') || 'none'}`}
-                        detail={e.targets_failed?.length ? `Failed: ${e.targets_failed.join(', ')}` : 'All targets acknowledged the write'}
-                        color={STATUS_COLOR[e.final_status] || '#94a3b8'} />
-
-                      <Step n={6} title="Audit logged"
-                        desc="Full trace saved to MongoDB audit_log collection"
-                        detail={`Event ID: ${e.event_id}`}
-                        color="#64748b" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function Step({ n, title, desc, detail, color }) {
-  return (
-    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-      <div style={{
-        width: 22, height: 22, borderRadius: '50%', background: color,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, color: '#0f172a', fontWeight: 700, flexShrink: 0,
-      }}>{n}</div>
-      <div>
-        <div style={{ fontSize: 12, color: '#e2e8f0', fontWeight: 600 }}>{title}</div>
-        <div style={{ fontSize: 11, color: '#64748b' }}>{desc}</div>
-        {detail && <div style={{ fontSize: 11, color: '#475569', marginTop: 2, fontStyle: 'italic' }}>{detail}</div>}
+              )
+            })}
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   )
 }
