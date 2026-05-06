@@ -29,3 +29,31 @@ def scramble_name(name: str) -> str:
     if _mode() == "RAW":
         return name
     return f"Business {_h(name, 4)}"
+
+_PII_FIELD_HANDLERS = {
+    "registered_address": scramble_address,
+    "factory_address":    scramble_address,
+    "shop_address":       scramble_address,
+    "plant_address":      scramble_address,
+    "phone":              scramble_phone,
+    "contact_number":     scramble_phone,
+    "mobile":             scramble_phone,
+    "helpline":           scramble_phone,
+    "business_name":      scramble_name,
+    "factory_name":       scramble_name,
+    "shop_name":          scramble_name,
+    "unit_name":          scramble_name,
+    "authorized_signatory": scramble_name,
+    "signatory_name":     scramble_name,
+    "proprietor":         scramble_name,
+    "nodal_officer":      scramble_name,
+}
+
+def scramble_payload(payload: dict) -> dict:
+    """Scramble PII fields in a payload. Pass-through in RAW mode."""
+    if _mode() == "RAW":
+        return payload
+    return {
+        field: (_PII_FIELD_HANDLERS[field](str(value)) if field in _PII_FIELD_HANDLERS else value)
+        for field, value in payload.items()
+    }

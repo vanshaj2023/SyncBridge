@@ -1,14 +1,10 @@
 import httpx, os
 from datetime import datetime, timezone
 from processors.translator import translate_event, load_schemas
+from processors.dept_registry import get_dept_urls
 from deps import get_db
 
-DEPT_URLS = {
-    "sws":                os.getenv("SWS_URL", "http://localhost:8000"),
-    "factories":          os.getenv("FACTORIES_URL", "http://localhost:8001"),
-    "shop_establishment": os.getenv("SHOP_ESTAB_URL", "http://localhost:8002"),
-    "kspcb":              os.getenv("KSPCB_URL", "http://localhost:8003"),
-}
+DEPT_URLS = get_dept_urls()
 CANONICAL_FIELDS = ["registered_address", "business_name", "authorized_signatory", "phone"]
 
 def find_discrepancies(states: dict, schemas: dict) -> list[dict]:

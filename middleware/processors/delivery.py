@@ -3,13 +3,10 @@ import httpx
 import redis.asyncio as aioredis
 from deps import get_redis, get_db
 from processors.circuit_breaker import get_breaker
+from processors.dept_registry import get_dept_urls
+from pii.scrambler import scramble_payload
 
-DEPT_URLS = {
-    "sws":                os.getenv("SWS_URL", "http://localhost:8000"),
-    "factories":          os.getenv("FACTORIES_URL", "http://localhost:8001"),
-    "shop_establishment": os.getenv("SHOP_ESTAB_URL", "http://localhost:8002"),
-    "kspcb":              os.getenv("KSPCB_URL", "http://localhost:8003"),
-}
+DEPT_URLS = get_dept_urls()
 
 async def deliver(event: dict, translated: dict, conflict: dict | None,
                   redis: aioredis.Redis | None = None) -> dict:
@@ -40,7 +37,7 @@ async def deliver(event: dict, translated: dict, conflict: dict | None,
                 url = f"{DEPT_URLS[dept]}/business/{event['ubid']}"
                 resp = await client.put(
                     url,
-                    json=payload,
+                    json=scramble_payload(payload),
                     headers={"X-SyncBridge-Origin": event_id},
                     timeout=5,
                 )

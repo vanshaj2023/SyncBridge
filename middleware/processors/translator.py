@@ -51,4 +51,5 @@ def get_schemas() -> dict:
     return SCHEMAS
 
 def get_targets(source: str) -> list[str]:
-    return [d for d in ["sws", "factories", "shop_establishment", "kspcb"] if d != source]
+    from processors.dept_registry import get_targets as _get_targets
+    return _get_targets(source)
