@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    ports: ["27017:27017"]
+    environment:
+      MONGO_INITDB_DATABASE: syncbridge
+
+  mock-sws:
+    build: ./mock_systems/sws
+    ports: ["8000:8000"]
+    environment:
+      SYNCBRIDGE_WEBHOOK_URL: http://middleware:9000/webhook/sws
+      DEPT_NAME: sws
+
+  mock-factories:
+    build: ./mock_systems/factories
+    ports: ["8001:8001"]
+    environment:
+      SYNCBRIDGE_WEBHOOK_URL: http://middleware:9000/webhook/factories
+      DEPT_NAME: factories
+
+  mock-shop-establishment:
+    build: ./mock_systems/shop_establishment
+    ports: ["8002:8002"]
+    environment:
+      DEPT_NAME: shop_establishment
+
+  mock-kspcb:
+    build: ./mock_systems/kspcb
+    ports: ["8003:8003"]
+    environment:
+      DEPT_NAME: kspcb
+
+  middleware:
+    build: ./middleware
+    ports: ["9000:9000"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+    environment:
+      REDIS_URL: redis://redis:6379
+      MONGO_URL: mongodb://mongo:27017/syncbridge
+      SWS_URL: http://mock-sws:8000
+      FACTORIES_URL: http://mock-factories:8001
+      SHOP_ESTAB_URL: http://mock-shop-establishment:8002
+      KSPCB_URL: http://mock-kspcb:8003
+      CONFLICT_WINDOW_SECONDS: "5"
+      POLL_INTERVAL_SECONDS: "10"
+      SNAPSHOT_INTERVAL_SECONDS: "30"
+      SCRAMBLE_MODE: "RAW"
+      SCRAMBLE_SALT: "demo-salt-2026"
+    volumes:
+      - ./middleware/config:/app/config
+
+  dashboard:
+    build: ./dashboard
+    ports: ["3000:80"]
+    environment:
+      VITE_MIDDLEWARE_URL: http://localhost:9000
