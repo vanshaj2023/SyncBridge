@@ -58,5 +58,6 @@ async def run_reconciliation(schemas: dict | None = None) -> list[dict]:
     discrepancies = find_discrepancies(states, schemas)
     if discrepancies:
         db = get_db()
-        await db["reconciliation_findings"].insert_many(discrepancies)
+        await db["reconciliation_findings"].insert_many([dict(d) for d in discrepancies])
+        # insert_many mutates the dicts with _id; return clean copies
     return discrepancies

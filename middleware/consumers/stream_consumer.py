@@ -50,7 +50,15 @@ async def _handle(stream_name: str, msg_id: str, fields: dict,
             if t:
                 translated[target] = t
 
-        conflict = await check_conflict(fields, redis=redis)
+        # Build canonical changes (source field → canonical field) for conflict detection
+        source_schema = schemas.get(source, {})
+        source_field_map = source_schema.get("field_map", {})
+        reverse_map = {v: k for k, v in source_field_map.items()}
+        canonical_changes = {reverse_map.get(f, f): v for f, v in changes.items()}
+        canonical_fields_str = json.dumps(canonical_changes)
+        conflict_fields = dict(fields)
+        conflict_fields["changes"] = canonical_fields_str
+        conflict = await check_conflict(conflict_fields, redis=redis)
         delivery_status = await deliver(fields, translated, conflict)
         await log_audit(fields, translated, conflict, delivery_status)
         await redis.xack(stream_name, GROUP, msg_id)
