@@ -39,7 +39,7 @@ export default function ConflictTrigger() {
     setBusy(s.id)
     try {
       const results = await Promise.all(s.fires.map(({ source, payload }) => api.trigger(source, UBID, payload)))
-      setLog(prev => [{ t: new Date().toLocaleTimeString(), label: s.label, ok: results.every(r => r.event_id) }, ...prev.slice(0, 4)])
+      setLog(prev => [{ t: new Date().toLocaleTimeString(), label: s.label, ok: results.every(r => r.triggered || r.event_id) }, ...prev.slice(0, 4)])
     } finally {
       setBusy(null)
     }
