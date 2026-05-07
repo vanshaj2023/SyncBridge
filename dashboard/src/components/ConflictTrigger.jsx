@@ -24,16 +24,16 @@ const SCENARIOS = [
   },
   {
     id: 'dept', label: 'Factory Updates Signatory',
-    desc: 'A change made directly in Factories propagates to SWS and other departments.',
+    desc: 'A change in Factories propagates back to SWS and other departments.',
     steps: ['Factories updates signatory directly — not through SWS', 'SyncBridge detects it via webhook', 'Translates signatory_name to authorized_signatory', 'Writes to SWS, Shop Est., and KSPCB', 'All systems stay in sync automatically'],
     fires: [{ source: 'factories', payload: { signatory_name: 'Suresh Menon' } }],
   },
 ]
 
 export default function ConflictTrigger() {
-  const [open, setOpen]   = useState(null)
-  const [busy, setBusy]   = useState(null)
-  const [log, setLog]     = useState([])
+  const [open, setOpen] = useState(null)
+  const [busy, setBusy] = useState(null)
+  const [log, setLog]   = useState([])
 
   const fire = async (s) => {
     setBusy(s.id)
@@ -48,33 +48,39 @@ export default function ConflictTrigger() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      <div style={{ marginBottom: 2 }}>
-        <div className="section-title">Demo Scenarios</div>
-        <div className="section-sub">Pre-built scenarios to demonstrate SyncBridge capabilities</div>
+      <div>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-1)', letterSpacing: '-0.02em' }}>Demo Scenarios</h2>
+        <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>Pre-built scenarios to demonstrate SyncBridge capabilities — UBID: <span style={{ fontFamily: 'monospace' }}>{UBID}</span></p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {SCENARIOS.map(s => (
-          <div key={s.id} className="card">
-            <div style={{ padding: '14px 16px', borderBottom: open === s.id ? '1px solid var(--border)' : 'none' }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', marginBottom: 3 }}>{s.label}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 12 }}>{s.desc}</div>
+          <div key={s.id} className="card" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '16px 18px', borderBottom: open === s.id ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', letterSpacing: '-0.01em', marginBottom: 4 }}>{s.label}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 14, lineHeight: 1.5 }}>{s.desc}</div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => fire(s)} disabled={busy === s.id} className="btn btn-primary" style={{ flex: 1, fontSize: 12, padding: '7px 12px' }}>
-                  {busy === s.id ? 'Running...' : 'Run'}
+                  {busy === s.id ? 'Running...' : 'Run Scenario'}
                 </button>
                 <button onClick={() => setOpen(open === s.id ? null : s.id)} className="btn btn-ghost" style={{ fontSize: 12, padding: '7px 12px' }}>
-                  {open === s.id ? 'Hide' : 'Steps'}
+                  {open === s.id ? 'Hide' : 'How it works'}
                 </button>
               </div>
             </div>
 
             {open === s.id && (
-              <div className="fade-in" style={{ padding: '12px 16px', background: 'var(--surface-2)' }}>
+              <div style={{ padding: '14px 18px', background: 'var(--surface-2)' }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>Execution steps</div>
                 {s.steps.map((step, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 6 }}>
-                    <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 600, color: 'var(--text-3)', flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{step}</div>
+                  <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i < s.steps.length - 1 ? 8 : 0 }}>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: '50%',
+                      background: 'var(--surface)', border: '1px solid var(--border-2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 9, fontWeight: 600, color: 'var(--text-3)', flexShrink: 0, marginTop: 1,
+                    }}>{i + 1}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5 }}>{step}</div>
                   </div>
                 ))}
               </div>
@@ -84,18 +90,21 @@ export default function ConflictTrigger() {
       </div>
 
       {log.length > 0 && (
-        <div className="card">
-          <div className="card-header"><div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-2)' }}>Activity</div></div>
-          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <section className="card">
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>Activity</div>
+            <span className="badge badge-gray">{log.length}</span>
+          </div>
+          <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {log.map((l, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: i < log.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                <span style={{ fontSize: 12, color: 'var(--text-1)', fontWeight: 500 }}>{l.label}</span>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: i < log.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-1)' }}>{l.label}</span>
                 <span className={`badge ${l.ok ? 'badge-green' : 'badge-red'}`}>{l.ok ? 'Queued' : 'Error'}</span>
                 <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-4)' }}>{l.t}</span>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   )
