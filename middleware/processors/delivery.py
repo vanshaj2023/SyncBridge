@@ -8,6 +8,13 @@ from pii.scrambler import scramble_payload
 
 DEPT_URLS = get_dept_urls()
 
+# After delivering to polled/snapshot depts, update the snapshot baseline
+# so the poller doesn't re-emit bridge-originated writes as new events (loop prevention)
+SNAPSHOT_KEYS = {
+    "shop_establishment": "snapshot:shop_establishment",
+    "kspcb":              "snapshot:kspcb",
+}
+
 async def deliver(event: dict, translated: dict, conflict: dict | None,
                   redis: aioredis.Redis | None = None) -> dict:
     r = redis or get_redis()
@@ -46,6 +53,12 @@ async def deliver(event: dict, translated: dict, conflict: dict | None,
                 await r.setex(idem_key, 86400, "1")
                 breaker.record_success()
                 status[dept] = f"delivered:{latency_ms}ms"
+                # Update snapshot baseline so poller/snapshotter won't re-emit this write
+                if dept in SNAPSHOT_KEYS:
+                    raw = await r.get(SNAPSHOT_KEYS[dept])
+                    snap = json.loads(raw) if raw else {}
+                    snap[event["ubid"]] = {**snap.get(event["ubid"], {}), **payload}
+                    await r.set(SNAPSHOT_KEYS[dept], json.dumps(snap))
             except Exception as e:
                 latency_ms = int((time.monotonic() - t0) * 1000)
                 breaker.record_failure()
