@@ -101,6 +101,7 @@ export default function ManualTrigger() {
               <button onClick={() => setFields(dept.example)} className="btn btn-ghost" style={{ padding: '3px 9px', fontSize: 11 }}>Load example</button>
             </div>
 
+            {/* Added fields */}
             {Object.entries(fields).length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 8 }}>
                 {Object.entries(fields).map(([k, v]) => (
@@ -113,14 +114,23 @@ export default function ManualTrigger() {
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 6 }}>
-              <select className="input" value={addKey} onChange={e => setAddKey(e.target.value)} style={{ flex: '0 0 44%', color: addKey ? 'var(--text-1)' : 'var(--text-4)', fontSize: 12 }}>
-                <option value="">Select field...</option>
-                {dept.fields.filter(f => !fields[f]).map(f => <option key={f} value={f}>{f}</option>)}
-              </select>
-              <input className="input" value={addVal} onChange={e => setAddVal(e.target.value)} placeholder="Value" onKeyDown={e => e.key === 'Enter' && addField()} style={{ fontSize: 12 }} />
-              <button onClick={addField} className="btn btn-secondary" style={{ padding: '8px 14px', fontSize: 12 }}>Add</button>
-            </div>
+            {/* Inline add — selecting a field immediately adds it */}
+            {dept.fields.some(f => !fields[f]) && (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '8px 10px', border: '1px dashed var(--border)', borderRadius: 7, background: 'var(--surface-2)' }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M6 1v10M1 6h10" stroke="var(--text-4)" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                <select className="input" value={addKey} onChange={e => {
+                  const key = e.target.value
+                  setAddKey(key)
+                  if (key) setFields(f => ({ ...f, [key]: '' }))
+                  setAddVal('')
+                }} style={{ border: 'none', background: 'transparent', padding: '0', fontSize: 12, color: addKey ? 'var(--text-1)' : 'var(--text-4)', boxShadow: 'none', flex: 1 }}>
+                  <option value="">Add a field to update...</option>
+                  {dept.fields.filter(f => !fields[f]).map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+            )}
           </div>
 
           <button onClick={send} disabled={busy || !Object.values(fields).some(v => v)} className="btn btn-primary" style={{ width: '100%', padding: '11px', fontSize: 13 }}>
