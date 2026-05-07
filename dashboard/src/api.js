@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_MIDDLEWARE_URL || 'http://localhost:9000'
+const BASE = import.meta.env.VITE_MIDDLEWARE_URL || (window.location.hostname === 'localhost' ? 'http://localhost:9000' : '/api')
 
 export const api = {
   events:      () => fetch(`${BASE}/audit/events?limit=50`).then(r => r.json()),
