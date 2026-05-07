@@ -75,7 +75,7 @@ export default function App() {
                 Interoperability Dashboard
               </h1>
               <p style={{ fontSize: 14, color: 'var(--text-3)', marginTop: 6, lineHeight: 1.6, maxWidth: 480 }}>
-                Two-way sync between Karnataka's Single Window System and 40+ legacy department systems — automatic, auditable, conflict-aware.
+                Two-way sync between Karnataka's Single Window System and 40+ legacy department systems - automatic, auditable, conflict-aware.
               </p>
             </div>
 
